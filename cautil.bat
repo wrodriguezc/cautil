@@ -67,7 +67,8 @@ echo.
 set /p period=Enter the number of years then press [Enter]
 if '%period%'=='' goto :change
 if '%period%'=='0' goto :change
-reg add "%CA_NAME%" /v ValidityPeriodUnits /d %period% /f
+certutil -setreg CA\ValidityPeriodUnits %period%
+net stop certsvc && net start certsvc
 echo ValidityPeriodUnits set to %period%
 pause
 goto :manage
@@ -153,8 +154,6 @@ if '%name%'=='' set name=request
 certreq -new "%name%.inf" "%name%.req"
 echo Request "%name%.req" was created.
 pause
-goto :main
-
 goto :main
 
 :error

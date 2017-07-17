@@ -15,12 +15,14 @@ echo Main menu
 echo ---------------------------------- 
 echo.
 echo 1. Manage CA
-echo 2. Request certificate
-echo 3. Quit
+echo 2. Request Server Authentication Certificate
+echo 3. Request Client Authentication Certificate
+echo 5. Quit
 set /p choice=Select option then press [Enter]
 if '%choice%'=='1' goto :manage
-if '%choice%'=='2' goto :request
-if '%choice%'=='3' goto :quit
+if '%choice%'=='2' goto :requestsacert
+if '%choice%'=='3' goto :requestcacert
+if '%choice%'=='4' goto :quit
 goto main
 
 :manage
@@ -70,28 +72,18 @@ echo ValidityPeriodUnits set to %period%
 pause
 goto :manage
 
-:request
+:requestsacert
 cls
 echo.
-echo Create Certificate Request
+echo Server Authentication Certificate Request
 echo ---------------------------------- 
 echo.
-:step1
-echo Certificate type 
-echo 1. Server Authentication Certificate
-echo 2. Client Authentication Certificate
-set /p certtypeoption=Select certificate type to create then press [Enter]  (Default .1)
-if '%certtypeoption%'=='1' set certype=request
-if '%certtypeoption%'=='2' set certype=request
-echo.
-:step2
+:requestsacert_step1
 set /p cn=Type CN then press [Enter] (Required)
-if '%cn%'=='' goto :step2
+if '%cn%'=='' goto :requestsacert_step1
 echo.
-:step3
 set /p keylength=Type key size then press [Enter] (Default 2048)
 if '%keylength%'=='' set keylength=2048
-:step4
 echo.
 set /p name=Type the name of the request then press [Enter] (Default 'request.req')
 if '%name%'=='' set name=request
@@ -101,11 +93,68 @@ if '%name%'=='' set name=request
     echo.
     echo [NewRequest] 
     echo Subject = "CN=%cn%"
+    echo Exportable = FALSE
     echo KeyLength = %keylength%
+    echo KeyUsage = 0xA0
+    echo Exportable = TRUE
+    echo MachineKeySet = True
+    echo ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
+    echo.         
+    echo [EnhancedKeyUsageExtension]
+    echo OID=1.3.6.1.5.5.7.3.1    
 ) > %name%.inf
 certreq -new "%name%.inf" "%name%.req"
 echo Request "%name%.req" was created.
 pause
+goto :main
+
+:requestcacert
+cls
+echo.
+echo Client Authentication Certificate Request
+echo ---------------------------------- 
+echo.
+:requestcacert_step1
+set /p cn=Type the CN for Subject then press [Enter] (Required)
+if '%cn%'=='' goto :requestcacert_step1
+echo.
+:requestcacert_step2
+set /p dns=Type the DNS for SubjectAlternativeName then press [Enter] (Required)
+if '%dns%'=='' goto :requestcacert_step2
+echo.
+set /p keylength=Type key size then press [Enter] (Default 2048)
+if '%keylength%'=='' set keylength=2048
+echo.
+set /p name=Type the name of the request then press [Enter] (Default 'request.req')
+if '%name%'=='' set name=request
+(
+    echo [Version] 
+    echo Signature="$Windows NT$"
+    echo.
+    echo [NewRequest]
+    echo Subject = "CN=%cn%"   
+    echo Exportable = FALSE
+    echo KeyLength = %keylength%
+    echo KeyUsage = 0xA0
+    echo Exportable = TRUE
+    echo MachineKeySet = True
+    echo ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
+    echo.     
+    echo [Extensions] 
+    echo 2.5.29.17 = "{text}"
+    echo _continue_ = "dns=%dns%"
+    echo.         
+    echo [EnhancedKeyUsageExtension]
+    echo OID=1.3.6.1.5.5.7.3.2 
+    echo.    
+    echo [RequestAttributes]
+    echo SAN="dns=%dns%"    
+) > %name%.inf
+certreq -new "%name%.inf" "%name%.req"
+echo Request "%name%.req" was created.
+pause
+goto :main
+
 goto :main
 
 :error

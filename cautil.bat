@@ -17,7 +17,7 @@ echo.
 echo 1. Manage CA
 echo 2. Request Server Authentication Certificate
 echo 3. Request Client Authentication Certificate
-echo 5. Quit
+echo 4. Quit
 set /p choice=Select option then press [Enter]
 if '%choice%'=='1' goto :manage
 if '%choice%'=='2' goto :requestsacert
